@@ -1,4 +1,6 @@
 const net = require('net');
+const url = require('url');
+const { URL } = require('url');
 
 const arguments = process.argv.slice(2);
 
@@ -14,65 +16,59 @@ const methods = [
   'PATCH'
 ];
 
-const protocols = { 'http:': 80, 'https:': 443 };
+// const protocols = { 'http:': 80, 'https:': 443 };
+const ports = { 'http:': 80, 'https:': 443 };
 
-let url = process.argv[2];
-url = new URL(process.argv[2]);
+// let serverUrl = new URL(process.argv[2]);
 
-url = parseUrl(url);
-try {
-  url = new URL(process.argv[2]);
-} catch (error) {
-  url = new URL(`http://${process.argv[2]}`);
-}
-let method = process.argv[3];
-// if () {
+let serverUrl = new URL(validateUrl(process.argv[2]));
 
-// }
-method = validateMethod(method);
+let method = validateMethod(process.argv[3]);
 
-let responseString = '';
-let responses = {};
+// let responseString = '';
+let response = {};
 let chunks = [];
 
+console.log(serverUrl);
 let options = {
-  host: url.host,
-  port: url.port
+  host: serverUrl.host,
+  port: ports[serverUrl.protocol]
 };
 
 const server = net.createConnection(options, (...args) => {
-  //'connect' listener
-  server.setEncoding('utf8');
-  console.log(...args);
   console.log('connected to server!');
-  server.write(buildRequestHeader(method, url.uri, url.host));
+
+  server.setEncoding('utf8');
+  server.write(
+    buildRequestHeader(method, serverUrl.pathname, serverUrl.hostname)
+  );
 
   server.on('data', data => {
-    responseString += data;
+    // responseString += data;
     chunks.push(data);
-    // console.log(data);
-    // console.log(responseString);
+    console.log(data);
     server.end();
   });
 
   server.on('end', () => {
     console.log(chunks);
-    console.log(chunks.length);
-    // console.log(responseString);
-    let response = responseString.split('\r\n');
-    // console.log(response);
-    let responseHeader = response.slice(0, response.length - 2);
-    let responseBody = response.slice(response.length - 1);
-    responseBody = response[response.length - 4];
-    // console.log(response[response.length - 4]);
+    let responseString = chunks.join('');
+    console.log(responseString);
 
-    // let responseLine = response[0].split(' ');
+    let responseLine = responseString.split('\r\n');
+    // console.log(responseLine);
+    let responseHeader = responseLine.slice(0, responseLine.length - 2);
+    let responseBody = responseLine.slice(responseLine.length - 1);
+    responseBody = responseLine[responseLine.length - 4];
+    // console.log(responseLine[responseLine.length - 4]);
+
+    // let responseLine = responseLine[0].split(' ');
     // console.log(responseHeader);
-    responses[url.host] = responseHeader.reduce(function(acum, curr, index) {
+    response[url.host] = responseHeader.reduce(function(acum, curr, index) {
       if (index === 0) {
         acum.header = {};
         let responseLine = curr.split(' ');
-        acum.header.response = {
+        acum.header.responseLine = {
           method: responseLine[0],
           URI: responseLine[1],
           version: responseLine[2]
@@ -84,9 +80,9 @@ const server = net.createConnection(options, (...args) => {
         return acum;
       }
     }, {});
-    responses[url.host]['body'] = responseBody;
-    // console.log(responses[url.host]);
-    // console.log(responses[url.host].body);
+    response[url.host]['body'] = responseBody;
+    // console.log(response[url.host]);
+    // console.log(response[url.host].body);
     console.log('disconnected from server');
   });
   server.on('close', (...args) => {
@@ -111,41 +107,59 @@ function buildRequestHeader(method, uri, host) {
   let hostLine = `Host: ${host}\r\n`;
   let dateLine = `Date: ${new Date().toUTCString()}\r\n`;
   let breakLine = '\r\n';
-  // console.log(requestLine + hostLine + dateLine + breakLine);
+  console.log(requestLine + hostLine + dateLine + breakLine);
   return requestLine + hostLine + dateLine + breakLine;
 }
 
-function parseUrl(url) {
-  let host = null;
-  let protocol = null;
-  let uri = null;
-  let port = null;
-
-  if (url.startsWith('https')) {
-    port = 443;
-  } else {
-    port = 80;
+function validateUrl(url) {
+  try {
+    url = new URL(url);
+  } catch (error) {
+    url = new URL(`http://${url}`);
   }
-
-  if (url.indexOf('://') !== -1) {
-    let urlSplit = url.split('://');
-    protocol = urlSplit[0];
-    url = urlSplit[1];
-  } else {
-    protocol = 'http';
-  }
-
-  if (url.indexOf('/') !== -1) {
-    host = url.slice(0, url.indexOf('/'));
-    uri = url.slice(url.indexOf('/'));
-  } else {
-    host = url;
-    uri = '/';
-  }
-
-  return {
-    host: `${host}`,
-    uri: uri,
-    port: port
-  };
+  return url;
 }
+
+// function setUrl(url) {
+//   try {
+//     url = new URL(url);
+//   } catch (error) {
+//     url = new URL(`http://${url}`);
+//   }
+//   return url;
+// }
+
+// function parseUrl(url) {
+//   let host = null;
+//   let protocol = null;
+//   let uri = null;
+//   let port = null;
+
+//   if (url.startsWith('https')) {
+//     port = 443;
+//   } else {
+//     port = 80;
+//   }
+
+//   if (url.indexOf('://') !== -1) {
+//     let urlSplit = url.split('://');
+//     protocol = urlSplit[0];
+//     url = urlSplit[1];
+//   } else {
+//     protocol = 'http';
+//   }
+
+//   if (url.indexOf('/') !== -1) {
+//     host = url.slice(0, url.indexOf('/'));
+//     uri = url.slice(url.indexOf('/'));
+//   } else {
+//     host = url;
+//     uri = '/';
+//   }
+
+//   return {
+//     host: `${host}`,
+//     uri: uri,
+//     port: port
+//   };
+// }
