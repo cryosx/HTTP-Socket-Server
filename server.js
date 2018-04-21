@@ -29,50 +29,50 @@ const server = net.createServer(client => {
         return acum;
       } else {
         let headerLine = curr.split(': ');
-        // console.log('headerline', headerLine);
         acum[headerLine[0]] = headerLine[1];
-
         return acum;
       }
     }, {});
+    console.log(header);
 
     if (header.request.method === 'GET') {
       if (header.request.URI === '/' || header.request.URI === '/index.html') {
-        // console.log(buildReponse(dataPages['index.html']));
-        client.write(buildReponse(dataPages['index.html']));
+        client.write(buildResponse(dataPages['index.html'], 200, 'html'));
       } else if (header.request.URI === '/hydrogen.html') {
-        client.write(buildReponse(dataPages['hydrogen.html']));
+        client.write(buildResponse(dataPages['hydrogen.html'], 200, 'html'));
       } else if (header.request.URI === '/helium.html') {
-        client.write(buildReponse(dataPages['helium.html']));
+        client.write(buildResponse(dataPages['helium.html'], 200, 'html'));
       } else if (header.request.URI === '/css/styles.css') {
-        client.write(buildReponse(dataPages['styles.html']));
+        client.write(buildResponse(dataPages['styles.css'], 200, 'css'));
       } else {
-        client.write(buildReponse(dataPages['404.html']));
+        client.write(buildResponse(dataPages['404.html'], 404, 'html'));
       }
     }
-
-    // console.log(header);
+    // client.end();
   });
-  client.on('end', (...args) => {
-    // console.log('end', request);
-    // console.log('end', ...args);
-  });
+  client.on('end', (...args) => {});
   client.on('close', (...args) => {
-    // console.log('close', request);
-    // console.log('close', ...args);
+    console.log('Client disconnected');
   });
 });
 server.on('error', error => {
   throw error;
 });
-server.listen(port, () => {
-  // console.log('server bound');
-});
+server.listen(port, () => {});
 
-function buildReponse(body) {
-  let responseLine = `HTTP/1.1 200 OK\r\n`;
+function buildResponse(body, responseCode, type) {
+  console.log(body === undefined);
+  let responseMessage = null;
+  if (responseCode === 200) {
+    responseMessage = 'OK';
+  } else if (responseCode === 404) {
+    responseMessage = 'Not Found';
+  } else {
+    responseMessage = 'Not Found';
+  }
+  let responseLine = `HTTP/1.1 ${responseCode} ${responseMessage}\r\n`;
   let date = `Date: ${new Date().toUTCString()}\r\n`;
-  let contentType = `Content-Type: text/html; charset=utf-8\r\n`;
+  let contentType = `Content-Type: text/${type}; charset=utf-8\r\n`;
   let contentLength = `Content-Length: ${body.length}\r\n`;
   let headerBreak = `\r\n`;
 
