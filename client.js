@@ -1,5 +1,7 @@
 const net = require('net');
 
+const arguments = process.argv.slice(2);
+
 const methods = [
   'GET',
   'HEAD',
@@ -12,13 +14,26 @@ const methods = [
   'PATCH'
 ];
 
-let url = process.argv[2];
-url = parseUrl(url);
+const protocols = { 'http:': 80, 'https:': 443 };
 
+let url = process.argv[2];
+url = new URL(process.argv[2]);
+
+url = parseUrl(url);
+try {
+  url = new URL(process.argv[2]);
+} catch (error) {
+  url = new URL(`http://${process.argv[2]}`);
+}
 let method = process.argv[3];
+// if () {
+
+// }
 method = validateMethod(method);
 
+let responseString = '';
 let responses = {};
+let chunks = [];
 
 let options = {
   host: url.host,
@@ -33,17 +48,31 @@ const server = net.createConnection(options, (...args) => {
   server.write(buildRequestHeader(method, url.uri, url.host));
 
   server.on('data', data => {
-    let response = data.split('\r\n');
+    responseString += data;
+    chunks.push(data);
+    // console.log(data);
+    // console.log(responseString);
+    server.end();
+  });
 
+  server.on('end', () => {
+    console.log(chunks);
+    console.log(chunks.length);
+    // console.log(responseString);
+    let response = responseString.split('\r\n');
+    // console.log(response);
     let responseHeader = response.slice(0, response.length - 2);
     let responseBody = response.slice(response.length - 1);
+    responseBody = response[response.length - 4];
+    // console.log(response[response.length - 4]);
 
     // let responseLine = response[0].split(' ');
     // console.log(responseHeader);
     responses[url.host] = responseHeader.reduce(function(acum, curr, index) {
       if (index === 0) {
+        acum.header = {};
         let responseLine = curr.split(' ');
-        acum['response'] = {
+        acum.header.response = {
           method: responseLine[0],
           URI: responseLine[1],
           version: responseLine[2]
@@ -51,16 +80,13 @@ const server = net.createConnection(options, (...args) => {
         return acum;
       } else {
         let headerLine = curr.split(': ');
-        acum[headerLine[0]] = headerLine[1];
+        acum.header[headerLine[0]] = headerLine[1];
         return acum;
       }
     }, {});
-    responses[url.host].body = responseBody;
-    console.log(responses[url.host].body);
-    server.end();
-  });
-
-  server.on('end', () => {
+    responses[url.host]['body'] = responseBody;
+    // console.log(responses[url.host]);
+    // console.log(responses[url.host].body);
     console.log('disconnected from server');
   });
   server.on('close', (...args) => {
