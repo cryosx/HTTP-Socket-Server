@@ -33,7 +33,28 @@ const server = net.createServer(client => {
         return acum;
       }
     }, {});
-    console.log(header);
+
+    if (header.request.method === 'HEAD') {
+      if (header.request.URI === '/' || header.request.URI === '/index.html') {
+        client.write(
+          buildResponse(dataPages['index.html'], 200, 'html', 'HEAD')
+        );
+      } else if (header.request.URI === '/hydrogen.html') {
+        client.write(
+          buildResponse(dataPages['hydrogen.html'], 200, 'html', 'HEAD')
+        );
+      } else if (header.request.URI === '/helium.html') {
+        client.write(
+          buildResponse(dataPages['helium.html'], 200, 'html', 'HEAD')
+        );
+      } else if (header.request.URI === '/css/styles.css') {
+        client.write(
+          buildResponse(dataPages['styles.css'], 200, 'css', 'HEAD')
+        );
+      } else {
+        client.write(buildResponse(dataPages['404.html'], 404, 'html', 'HEAD'));
+      }
+    }
 
     if (header.request.method === 'GET') {
       if (header.request.URI === '/' || header.request.URI === '/index.html') {
@@ -60,8 +81,7 @@ server.on('error', error => {
 });
 server.listen(port, () => {});
 
-function buildResponse(body, responseCode, type) {
-  console.log(body === undefined);
+function buildResponse(body, responseCode, type, method) {
   let responseMessage = null;
   if (responseCode === 200) {
     responseMessage = 'OK';
@@ -76,5 +96,11 @@ function buildResponse(body, responseCode, type) {
   let contentLength = `Content-Length: ${body.length}\r\n`;
   let headerBreak = `\r\n`;
 
-  return responseLine + date + contentType + contentLength + headerBreak + body;
+  if (method === 'HEAD') {
+    return responseLine + date + contentType + contentLength + headerBreak;
+  } else {
+    return (
+      responseLine + date + contentType + contentLength + headerBreak + body
+    );
+  }
 }
