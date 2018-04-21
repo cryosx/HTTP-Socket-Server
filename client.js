@@ -1,9 +1,24 @@
 const net = require('net');
 
+const methods = [
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'DELETE',
+  'CONNECT',
+  'OPTIONS',
+  'TRACE',
+  'PATCH'
+];
+
 let url = process.argv[2];
 url = parseUrl(url);
 
-let responseHeaderStore = {};
+let method = process.argv[3];
+method = validateMethod(method);
+
+let responses = {};
 
 let options = {
   host: url.host,
@@ -12,12 +27,12 @@ let options = {
 
 const server = net.createConnection(options, (...args) => {
   //'connect' listener
+  server.setEncoding('utf8');
   console.log(...args);
   console.log('connected to server!');
-  server.write(buildRequestHeader('GET', url.uri, url.host));
+  server.write(buildRequestHeader(method, url.uri, url.host));
 
   server.on('data', data => {
-    console.log(data.toString());
     let response = data.split('\r\n');
 
     let responseHeader = response.slice(0, response.length - 2);
@@ -25,7 +40,7 @@ const server = net.createConnection(options, (...args) => {
 
     // let responseLine = response[0].split(' ');
     // console.log(responseHeader);
-    header = responseHeader.reduce(function(acum, curr, index) {
+    responses[url.host] = responseHeader.reduce(function(acum, curr, index) {
       if (index === 0) {
         let responseLine = curr.split(' ');
         acum['response'] = {
@@ -40,15 +55,33 @@ const server = net.createConnection(options, (...args) => {
         return acum;
       }
     }, {});
+    responses[url.host].body = responseBody;
+    console.log(responses[url.host].body);
     server.end();
   });
+
   server.on('end', () => {
     console.log('disconnected from server');
   });
+  server.on('close', (...args) => {
+    // console.log(...args);
+  });
 });
 
+server.on('error', error => {
+  console.log(error);
+});
+
+function validateMethod(method) {
+  if (method && methods.includes(method.toUpperCase())) {
+    return method.toUpperCase();
+  } else {
+    return 'GET';
+  }
+}
+
 function buildRequestHeader(method, uri, host) {
-  let requestLine = `${method.toUpperCase()} ${uri} HTTP/1.1\r\n`;
+  let requestLine = `${method} ${uri} HTTP/1.1\r\n`;
   let hostLine = `Host: ${host}\r\n`;
   let dateLine = `Date: ${new Date().toUTCString()}\r\n`;
   let breakLine = '\r\n';
