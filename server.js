@@ -19,37 +19,28 @@
       request.header = parseHeader(requestHeader);
       request.body = requestBody;
 
-      let uri = parseURI(request.header.requestline.URI);
-      console.log(uri);
+      let parsedURI = parseURI(request.header.requestline.URI);
 
-      if (dataPages.hasOwnProperty(uri.uri) && uri.file !== '404.html') {
-        client.write(
-          buildResponse(
-            dataPages[uri.uri],
-            200,
-            uri.type,
-            request.header.requestline.method
-          )
-        );
-      } else {
-        client.write(
-          buildResponse(
+      let responseCode =
+        dataPages[parsedURI.uri] || dataPages[dataPages.aliases[parsedURI.uri]]
+          ? 200
+          : 404;
+      console.log(responseCode);
+      client.write(
+        buildResponse(
+          dataPages[parsedURI.uri] ||
+            dataPages[dataPages.aliases[parsedURI.uri]] ||
             dataPages['404.html'],
-            404,
-            uri.type,
-            request.header.requestline.method
-          )
-        );
-      }
+          responseCode,
+          parsedURI.type,
+          request.header.requestline.method
+        )
+      );
     });
     client.on('end', (...args) => {});
-    client.on('close', (...args) => {
-      console.log('Client disconnected');
-    });
+    client.on('close', (...args) => {});
   });
-  server.on('error', error => {
-    throw error;
-  });
+  server.on('error', error => {});
   server.listen(port, () => {});
 
   let responseCodes = { 200: 'OK', 404: 'Not Found' };
