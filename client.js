@@ -28,17 +28,13 @@ const ports = { 'http:': 80, 'https:': 443 };
 
 const commands = processCli(arguments);
 
-console.log(commands);
-
 const serverUrl = new URL(validateUrl(commands.url));
 
 const method = validateMethod(commands.method || 'GET');
 
-const port = commands.port;
-
 const options = {
   host: serverUrl.hostname,
-  port: port || serverUrl.port || ports[serverUrl.protocol] || 80
+  port: commands.port || serverUrl.port || ports[serverUrl.protocol] || 80
 };
 
 const server = new net.Socket();
