@@ -2,9 +2,15 @@ const net = require('net');
 const url = require('url');
 const { URL } = require('url');
 
+// const arguments = process.argv[2].split(' ');
 const arguments = process.argv.slice(2);
 
-const cliOptions = ['-port', '-p', '-header', '-h', '-method', '-m'];
+const cliOptions = {
+  '-port': 'port',
+  '-p': 'port',
+  '-method': 'method',
+  '-m': 'method'
+};
 
 const methods = [
   'GET',
@@ -20,23 +26,24 @@ const methods = [
 
 const ports = { 'http:': 80, 'https:': 443 };
 
-processCli(arguments);
+const commands = processCli(arguments);
 
-function processCli(arguments) {}
+console.log(commands);
 
-let serverUrl = new URL(validateUrl(process.argv[2]));
+const serverUrl = new URL(validateUrl(commands.url));
 
-let method = validateMethod(process.argv[3]);
+const method = validateMethod(commands.method);
 
-let chunks = [];
+const port = commands.port;
 
-let options = {
+const options = {
   host: serverUrl.hostname,
-  port: serverUrl.port || ports[serverUrl.protocol] || 80
+  port: port || serverUrl.port || ports[serverUrl.protocol] || 80
 };
 
 const server = net.createConnection(options, (...args) => {
-  console.log('connected');
+  let chunks = [];
+
   server.setEncoding('utf8');
 
   server.write(
@@ -67,17 +74,47 @@ const server = net.createConnection(options, (...args) => {
     } else {
       response.body = parseBody(responseBody, false);
     }
-    console.log(response.body);
+    if (method === 'HEAD') {
+      console.log(response.header);
+    } else {
+      console.log(response.body);
+    }
   });
   server.on('close', (...args) => {});
 });
 
-server.on('error', error => {});
+server.on('error', error => {
+  console.log('error');
+});
+
+function processCli(arguments) {
+  let result = {};
+  while (arguments.includes('-header')) {
+    arguments.splice(arguments.indexOf('-header'), 1);
+    result.method = 'HEAD';
+  }
+  while (arguments.includes('-h')) {
+    arguments.splice(arguments.indexOf('-h'), 1);
+    result.method = 'HEAD';
+  }
+  arguments.forEach(function(elem, index, array) {
+    if (index === 0) {
+      result.url = elem;
+    } else {
+      if (cliOptions.hasOwnProperty(elem)) {
+        result[cliOptions[elem]] = array[index + 1];
+        index += 2;
+      }
+    }
+  });
+  return result;
+}
 
 function validateMethod(method) {
   if (method && methods.includes(method.toUpperCase())) {
     return method.toUpperCase();
   } else {
+    console.log(`Method ${method} invalid, setting method to GET`);
     return 'GET';
   }
 }
