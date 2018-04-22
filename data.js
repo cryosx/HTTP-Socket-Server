@@ -21,7 +21,7 @@ module.exports = {
     </ol>
   </body>
   </html>`,
-  '404.html': `<!DOCTYPE html>
+  '/404.html': `<!DOCTYPE html>
   <html lang="en">
   <head>
     <meta charset="UTF-8">

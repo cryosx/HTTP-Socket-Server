@@ -38,33 +38,33 @@
     port: commands.port || serverUrl.port || ports[serverUrl.protocol] || 80
   };
 
-  const server = new net.Socket();
-  server.on('error', error => {
+  const serverConnection = new net.Socket();
+  serverConnection.on('error', error => {
     console.log('error');
   });
 
-  server.setTimeout(3000);
+  serverConnection.setTimeout(3000);
 
-  server.on('timeout', error => {
+  serverConnection.on('timeout', error => {
     console.log('Timeout');
-    server.destroy();
+    serverConnection.destroy();
   });
 
-  server.connect(options, (...args) => {
+  serverConnection.connect(options, (...args) => {
     let chunks = [];
 
-    server.setEncoding('utf8');
+    serverConnection.setEncoding('utf8');
 
-    server.write(
+    serverConnection.write(
       buildRequestHeader(method, serverUrl.pathname, serverUrl.hostname)
     );
 
-    server.on('data', data => {
+    serverConnection.on('data', data => {
       chunks.push(data);
-      server.end();
+      serverConnection.end();
     });
 
-    server.on('end', () => {
+    serverConnection.on('end', () => {
       let response = {};
 
       let responseString = chunks.join('');
@@ -89,7 +89,7 @@
         console.log(response.body);
       }
     });
-    server.on('close', (...args) => {});
+    serverConnection.on('close', (...args) => {});
   });
 
   function processCli(arguments) {
@@ -116,21 +116,6 @@
         }
       }
     }
-    // arguments.forEach(function(elem, index, array) {
-    //   console.log(index);
-    //   if (index === 0) {
-    //     result.url = elem;
-    //   } else {
-    //     if (cliOptions.hasOwnProperty(elem)) {
-    //       result[cliOptions[elem]] = array[index + 1];
-    //       console.log(index);
-    //       index = index + 2;
-    //       console.log(index);
-    //     } else {
-    //       console.log(`${elem} is not a valid option, it will be ignored`);
-    //     }
-    //   }
-    // });
     return result;
   }
 
@@ -162,10 +147,7 @@
   }
 
   function parseHeader(header) {
-    // let temp = responseHeader.split('\r\n');
-    let result = null;
-
-    result = header.split('\r\n').reduce(function(acum, curr, index) {
+    let result = header.split('\r\n').reduce(function(acum, curr, index) {
       if (index === 0) {
         let statusline = curr.split(' ');
         acum.status = {

@@ -25,12 +25,11 @@
         dataPages[parsedURI.uri] || dataPages[dataPages.aliases[parsedURI.uri]]
           ? 200
           : 404;
-      console.log(responseCode);
       client.write(
         buildResponse(
           dataPages[parsedURI.uri] ||
             dataPages[dataPages.aliases[parsedURI.uri]] ||
-            dataPages['404.html'],
+            dataPages['/404.html'],
           responseCode,
           parsedURI.type,
           request.header.requestline.method
