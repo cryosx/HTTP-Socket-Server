@@ -5,8 +5,6 @@
 
   const port = 8080;
 
-  let header = null;
-
   const server = net.createServer(client => {
     client.setEncoding('utf8');
 
@@ -22,6 +20,7 @@
       request.body = requestBody;
 
       let uri = parseURI(request.header.requestline.URI);
+      console.log(uri);
 
       if (dataPages.hasOwnProperty(uri.uri) && uri.file !== '404.html') {
         client.write(
