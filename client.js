@@ -32,7 +32,7 @@ console.log(commands);
 
 const serverUrl = new URL(validateUrl(commands.url));
 
-const method = validateMethod(commands.method);
+const method = validateMethod(commands.method || 'GET');
 
 const port = commands.port;
 
@@ -41,7 +41,22 @@ const options = {
   port: port || serverUrl.port || ports[serverUrl.protocol] || 80
 };
 
-const server = net.createConnection(options, (...args) => {
+const server = new net.Socket();
+server.on('error', error => {
+  console.log('error');
+});
+
+let timeout = false;
+
+server.setTimeout(3000);
+
+server.on('timeout', error => {
+  console.log('Timeout');
+  timeout = true;
+  server.destroy();
+});
+
+server.connect(options, (...args) => {
   let chunks = [];
 
   server.setEncoding('utf8');
@@ -83,10 +98,6 @@ const server = net.createConnection(options, (...args) => {
   server.on('close', (...args) => {});
 });
 
-server.on('error', error => {
-  console.log('error');
-});
-
 function processCli(arguments) {
   let result = {};
   while (arguments.includes('-header')) {
@@ -97,16 +108,35 @@ function processCli(arguments) {
     arguments.splice(arguments.indexOf('-h'), 1);
     result.method = 'HEAD';
   }
-  arguments.forEach(function(elem, index, array) {
+
+  for (let index = 0; index < arguments.length; index++) {
+    let elem = arguments[index];
     if (index === 0) {
       result.url = elem;
     } else {
       if (cliOptions.hasOwnProperty(elem)) {
-        result[cliOptions[elem]] = array[index + 1];
-        index += 2;
+        result[cliOptions[elem]] = arguments[index + 1];
+        index++;
+      } else {
+        console.log(`${elem} is not a valid option, it will be ignored`);
       }
     }
-  });
+  }
+  // arguments.forEach(function(elem, index, array) {
+  //   console.log(index);
+  //   if (index === 0) {
+  //     result.url = elem;
+  //   } else {
+  //     if (cliOptions.hasOwnProperty(elem)) {
+  //       result[cliOptions[elem]] = array[index + 1];
+  //       console.log(index);
+  //       index = index + 2;
+  //       console.log(index);
+  //     } else {
+  //       console.log(`${elem} is not a valid option, it will be ignored`);
+  //     }
+  //   }
+  // });
   return result;
 }
 
